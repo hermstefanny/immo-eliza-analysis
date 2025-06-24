@@ -193,10 +193,6 @@ def filling_data_with_median(df):
     return df_final
 
 
-def fill_garden_surface(df):
-    df["gardenSurface"][~df["hasGarden"]] = 0
-
-
 # NEW CATEGORICAL ENCODING FUNCTIONS
 
 
