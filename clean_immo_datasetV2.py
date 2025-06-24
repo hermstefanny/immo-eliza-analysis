@@ -336,14 +336,22 @@ def encode_categorical_features(df):
     print("\n Encoding boolean features...")
     boolean_columns = [
         "hasAttic",
+        "hasBasement",
+        "hasDressingRoom",
+        "hasDiningRoom",
+        "hasLift",
+        "hasHeatPump",
+        "hasPhotovoltaicPanels",
+        "hasThermicPanels",
+        "hasBalcony",
         "hasGarden",
         "hasAirConditioning",
         "hasArmoredDoor",
         "hasVisiophone",
-        "hasTerrace",
         "hasOffice",
         "hasSwimmingPool",
         "hasFireplace",
+        "hasLivingRoom",
         "accessibleDisabledPeople",
     ]
 
@@ -398,14 +406,22 @@ def preprocess_missing_values(df):
     # Fill boolean NaN with False (assuming missing means feature not present)
     boolean_cols = [
         "hasAttic",
+        "hasBasement",
+        "hasDressingRoom",
+        "hasDiningRoom",
+        "hasLift",
+        "hasHeatPump",
+        "hasPhotovoltaicPanels",
+        "hasThermicPanels",
+        "hasBalcony",
         "hasGarden",
         "hasAirConditioning",
         "hasArmoredDoor",
         "hasVisiophone",
-        "hasTerrace",
         "hasOffice",
         "hasSwimmingPool",
         "hasFireplace",
+        "hasLivingRoom",
         "accessibleDisabledPeople",
     ]
 
@@ -447,6 +463,15 @@ def create_final_ml_dataset(df_encoded):
     boolean_features = [
         "hasAttic_encoded",
         "hasGarden_encoded",
+        "hasBasement_encoded",
+        "hasDressingRoom_encoded",
+        "hasDiningRoom_encoded",
+        "hasLift_encoded",
+        "hasHeatPump_encoded",
+        "hasPhotovoltaicPanels_encoded",
+        "hasThermicPanels_encoded",
+        "hasBalcony_encoded",
+        "hasGarden_encoded",
         "hasAirConditioning_encoded",
         "hasArmoredDoor_encoded",
         "hasVisiophone_encoded",
@@ -454,6 +479,7 @@ def create_final_ml_dataset(df_encoded):
         "hasOffice_encoded",
         "hasSwimmingPool_encoded",
         "hasFireplace_encoded",
+        "hasLivingRoom_encoded",
         "accessibleDisabledPeople_encoded",
     ]
 
@@ -468,6 +494,7 @@ def create_final_ml_dataset(df_encoded):
     # Fill remaining numeric NaN values with median
     numeric_cols = df_final.select_dtypes(include=[np.number]).columns
     numeric_cols = [col for col in numeric_cols if col != "price"]  # Don't fill price
+    print(numeric_cols)
 
     for col in numeric_cols:
         if df_final[col].isnull().sum() > 0:
