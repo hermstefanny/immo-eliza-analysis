@@ -100,6 +100,7 @@ def clean_real_estate_data(df):
 
     boolean_cols = [
         "hasAttic",
+        "hasGarden",
         "hasBasement",
         "hasDressingRoom",
         "hasDiningRoom",
@@ -112,6 +113,7 @@ def clean_real_estate_data(df):
         "hasAirConditioning",
         "hasArmoredDoor",
         "hasVisiophone",
+        "hasTerrace",
         "hasOffice",
         "hasSwimmingPool",
         "hasFireplace",
@@ -336,6 +338,7 @@ def encode_categorical_features(df):
     print("\n Encoding boolean features...")
     boolean_columns = [
         "hasAttic",
+        "hasGarden",
         "hasBasement",
         "hasDressingRoom",
         "hasDiningRoom",
@@ -348,6 +351,7 @@ def encode_categorical_features(df):
         "hasAirConditioning",
         "hasArmoredDoor",
         "hasVisiophone",
+        "hasTerrace",
         "hasOffice",
         "hasSwimmingPool",
         "hasFireplace",
@@ -406,6 +410,7 @@ def preprocess_missing_values(df):
     # Fill boolean NaN with False (assuming missing means feature not present)
     boolean_cols = [
         "hasAttic",
+        "hasGarden",
         "hasBasement",
         "hasDressingRoom",
         "hasDiningRoom",
@@ -418,6 +423,7 @@ def preprocess_missing_values(df):
         "hasAirConditioning",
         "hasArmoredDoor",
         "hasVisiophone",
+        "hasTerrace",
         "hasOffice",
         "hasSwimmingPool",
         "hasFireplace",
@@ -488,13 +494,13 @@ def create_final_ml_dataset(df_encoded):
 
     # Filter to only include columns that exist in the dataset
     available_features = [col for col in all_features if col in df_encoded.columns]
+    print(f"Available Features {available_features}")
 
     df_final = df_encoded[available_features].copy()
 
     # Fill remaining numeric NaN values with median
     numeric_cols = df_final.select_dtypes(include=[np.number]).columns
     numeric_cols = [col for col in numeric_cols if col != "price"]  # Don't fill price
-    print(numeric_cols)
 
     for col in numeric_cols:
         if df_final[col].isnull().sum() > 0:
@@ -537,11 +543,11 @@ if __name__ == "__main__":
     df_clean = clean_real_estate_data(df)
 
     # 3. Apply categorical encoding:
-    df_encoded, encoding_mappings = full_encoding_pipeline(df_clean)
+    # df_encoded, encoding_mappings = full_encoding_pipeline(df_clean)
 
     # 4. Save the results:
     df_clean.to_csv("cleaned_real_estate_data.csv", index=False)
-    df_encoded.to_csv("ml_ready_real_estate_data.csv", index=False)
+    # df_encoded.to_csv("ml_ready_real_estate_data.csv", index=False)
 
     print(f"\n=== FINAL RESULTS ===")
     print(f"Cleaned data saved: cleaned_real_estate_data.csv ({df_clean.shape})")
