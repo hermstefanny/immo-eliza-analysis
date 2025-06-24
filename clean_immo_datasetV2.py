@@ -28,6 +28,49 @@ def clean_real_estate_data(df):
         df = df.drop("Unnamed: 0", axis=1)
         print("Removed 'Unnamed: 0' column")
 
+    # Remove specified columns based on decisions
+    print("\n Step 2.1: Removing specified columns...")
+    columns_to_remove = [
+        'heatingType',
+        'hasThermicPanels', 
+        'gardenOrientation', 
+        'terraceOrientation',
+        'roomCount', 
+        'monthlyCost', 
+        'diningRoomSurface', 
+        'streetFacadeWidth', 
+        'kitchenSurface', 
+        'hasBalcony', 
+        'accessibleDisabledPeople'
+    ]
+    
+    columns_removed = []
+    for col in columns_to_remove:
+        if col in df.columns:
+            df = df.drop(col, axis=1)
+            columns_removed.append(col)
+    
+    if columns_removed:
+        print(f"Removed specified columns: {columns_removed}")
+    else:
+        print("None of the specified columns were found in the dataset")
+
+    # NEW: Merge parking columns
+    print("\n Step 2.2: Merging parking columns...")
+    if 'parkingCountOutdoor' in df.columns and 'parkingCountIndoor' in df.columns:
+        # Fill NaN values with 0 before merging
+        df['parkingCountOutdoor'] = df['parkingCountOutdoor'].fillna(0)
+        df['parkingCountIndoor'] = df['parkingCountIndoor'].fillna(0)
+        
+        # Create merged parking count
+        df['totalParkingCount'] = df['parkingCountOutdoor'] + df['parkingCountIndoor']
+        
+        # Drop original parking columns
+        df = df.drop(['parkingCountOutdoor', 'parkingCountIndoor'], axis=1)
+        print(f"Merged parking columns into 'totalParkingCount': {df['totalParkingCount'].value_counts().to_dict()}")
+    else:
+        print("Parking columns not found for merging")
+
     # Step 3: Remove duplicates based on ID
     print("\n Step 3: Removing duplicate properties...")
 
@@ -52,10 +95,27 @@ def clean_real_estate_data(df):
         df = df[(df["price"] >= 50000) & (df["price"] <= 5000000)]
         print(f"Kept prices between 50k and 5M euros: {len(df)} properties")
 
+    # NEW: Handle garden surface imputation
+    print("\n Step 4.1: Handling garden surface imputation...")
+    if 'gardenSurface' in df.columns and 'hasGarden' in df.columns:
+        # Convert hasGarden to boolean if it's not already
+        df['hasGarden'] = df['hasGarden'].map({True: True, False: False, 'True': True, 'False': False})
+        
+        # Impute gardenSurface with 0 where hasGarden is False
+        mask = df['hasGarden'] == False
+        before_impute = df.loc[mask, 'gardenSurface'].isna().sum()
+        df.loc[mask, 'gardenSurface'] = df.loc[mask, 'gardenSurface'].fillna(0)
+        after_impute = df.loc[mask, 'gardenSurface'].isna().sum()
+        
+        print(f"Imputed {before_impute - after_impute} gardenSurface values with 0 where hasGarden=False")
+        print(f"Garden surface stats: min={df['gardenSurface'].min()}, max={df['gardenSurface'].max()}, median={df['gardenSurface'].median()}")
+    else:
+        print("gardenSurface or hasGarden columns not found")
+
     # Step 5: Clean numeric columns
     print("\n Step 5: Cleaning numeric features...")
 
-    numeric_cols = ["bedroomCount", "bathroomCount", "toiletCount", "terraceSurface"]
+    numeric_cols = ["bedroomCount", "bathroomCount", "toiletCount", "terraceSurface", "totalParkingCount"]
 
     for col in numeric_cols:
         if col in df.columns:
@@ -67,6 +127,8 @@ def clean_real_estate_data(df):
                 df.loc[df[col] > 10, col] = np.nan  # Max 10 bedrooms/bathrooms
             elif col == "toiletCount":
                 df.loc[df[col] > 5, col] = np.nan  # Max 5 toilets
+            elif col == "totalParkingCount":
+                df.loc[df[col] > 10, col] = np.nan  # Max 10 parking spaces
 
             print(f"Cleaned {col}: {df[col].notna().sum()} valid values")
 
@@ -95,7 +157,7 @@ def clean_real_estate_data(df):
             df[col] = df[col].astype(str).str.strip().str.replace(" ", "")
             print(f"Removed spaces from {col}")
 
-    # Step 7: Handle boolean columns
+    # Step 7: Handle boolean columns (updated list without removed columns)
     print("\n Step 7: Cleaning boolean features...")
 
     boolean_cols = [
@@ -106,9 +168,6 @@ def clean_real_estate_data(df):
         "hasLift",
         "hasHeatPump",
         "hasPhotovoltaicPanels",
-        "hasThermicPanels",
-        "hasBalcony",
-        "hasGarden",
         "hasTerrace",
         "hasAirConditioning",
         "hasArmoredDoor",
@@ -117,6 +176,7 @@ def clean_real_estate_data(df):
         "hasSwimmingPool",
         "hasFireplace",
         "hasLivingRoom",
+        "hasGarden" 
     ]
 
     for col in boolean_cols:
@@ -141,13 +201,13 @@ def clean_real_estate_data(df):
     print("\n Step 9: Removing columns with too many missing values...")
 
     # Remove columns where more than 80% of values are missing
-    threshold = 0.8
+    threshold = 0.5
     missing_pct = df.isnull().sum() / len(df)
     cols_to_drop = missing_pct[missing_pct > threshold].index.tolist()
 
     if cols_to_drop:
         df = df.drop(columns=cols_to_drop)
-        print(f"Removed columns with >50% missing: {cols_to_drop}")
+        print(f"Removed columns with >80% missing: {cols_to_drop}")
 
     # Step 10: Final summary
     print("\n Data cleaning completed!")
@@ -218,19 +278,19 @@ def encode_categorical_features(df):
         "Namur": 10,
         "Hainaut": 11,
     }
-    df_encoded["province_encoded"] = df_encoded["province"].map(province_mapping)
-    print(
-        f"Province encoding: {df_encoded['province_encoded'].value_counts().sort_index().to_dict()}"
-    )
+    if "province" in df_encoded.columns:
+        df_encoded["province_encoded"] = df_encoded["province"].map(province_mapping)
+        print(
+            f"Province encoding: {df_encoded['province_encoded'].value_counts().sort_index().to_dict()}"
+        )
 
     # 2. TYPE ENCODING (Simple ordinal)
     print("\n Encoding property types...")
     type_mapping = {"APARTMENT": 1, "HOUSE": 2}
-    df_encoded["type_encoded"] = df_encoded["type"].map(type_mapping)
-    print(f"Type encoding: {df_encoded['type_encoded'].value_counts().to_dict()}")
+    if "type" in df_encoded.columns:
+        df_encoded["type_encoded"] = df_encoded["type"].map(type_mapping)
+        print(f"Type encoding: {df_encoded['type_encoded'].value_counts().to_dict()}")
 
-    # 3. SUBTYPE ENCODING
-    print("\n Encoding property subtypes...")
     # 3. SUBTYPE ENCODING
     print("\n Encoding property subtypes...")
     subtype_mapping = {
@@ -269,8 +329,9 @@ def encode_categorical_features(df):
         "CASTLE": 23,
         "PAVILION": 24,
     }
-    df_encoded["subtype_encoded"] = df_encoded["subtype"].map(subtype_mapping)
-    print(f"Subtype encoding: {df_encoded['subtype_encoded'].value_counts().to_dict()}")
+    if "subtype" in df_encoded.columns:
+        df_encoded["subtype_encoded"] = df_encoded["subtype"].map(subtype_mapping)
+        print(f"Subtype encoding: {df_encoded['subtype_encoded'].value_counts().to_dict()}")
 
     # 4. LOCALITY ENCODING (Label encoding - too many unique values for ordinal)
     print("\n Encoding localities...")
@@ -288,42 +349,7 @@ def encode_categorical_features(df):
         le_locality = None
         print("No locality column found or all values are null")
 
-    # 5. GARDEN ORIENTATION ENCODING (if exists)
-    print("\n Encoding garden orientation...")
-    if "gardenOrientation" in df_encoded.columns:
-        garden_orientation_mapping = {
-            "SOUTH": 4,
-            "SOUTH_WEST": 3,
-            "SOUTHWEST": 3,
-            "SOUTH_EAST": 3,
-            "SOUTHEAST": 3,
-            "WEST": 2,
-            "EAST": 2,
-            "NORTH_WEST": 1,
-            "NORTHWEST": 1,
-            "NORTH_EAST": 1,
-            "NORTHEAST": 1,
-            "NORTH": 5,
-            "UNKNOWN": 0,
-        }
-        df_encoded["gardenOrientation_encoded"] = df_encoded["gardenOrientation"].map(
-            garden_orientation_mapping
-        )
-        print(
-            f"Garden orientation encoded: {df_encoded['gardenOrientation_encoded'].value_counts().to_dict()}"
-        )
-
-    # 6. TERRACE ORIENTATION ENCODING (if exists)
-    print("\n Encoding terrace orientation...")
-    if "terraceOrientation" in df_encoded.columns:
-        df_encoded["terraceOrientation_encoded"] = df_encoded["terraceOrientation"].map(
-            garden_orientation_mapping
-        )
-        print(
-            f"Terrace orientation encoded: {df_encoded['terraceOrientation_encoded'].value_counts().to_dict()}"
-        )
-
-    # 7. EPC SCORE ENCODING (Energy Performance Certificate - ordinal)
+    # 5. EPC SCORE ENCODING (Energy Performance Certificate - ordinal)
     print("\n Encoding EPC scores...")
     if "epcScore" in df_encoded.columns:
         epc_mapping = {"A+": 8, "A": 7, "B": 6, "C": 5, "D": 4, "E": 3, "F": 2, "G": 1}
@@ -332,7 +358,7 @@ def encode_categorical_features(df):
             f"EPC encoding: {df_encoded['epcScore_encoded'].value_counts().sort_index().to_dict()}"
         )
 
-    # 8. BOOLEAN FEATURES - Convert True/False to 1/0
+    # 6. BOOLEAN FEATURES - Convert True/False to 1/0 (updated list)
     print("\n Encoding boolean features...")
     boolean_columns = [
         "hasAttic",
@@ -344,7 +370,13 @@ def encode_categorical_features(df):
         "hasOffice",
         "hasSwimmingPool",
         "hasFireplace",
-        "accessibleDisabledPeople",
+        "hasBasement",
+        "hasDressingRoom",
+        "hasDiningRoom",
+        "hasLift",
+        "hasHeatPump",
+        "hasPhotovoltaicPanels",
+        "hasLivingRoom"
     ]
 
     for col in boolean_columns:
@@ -361,11 +393,6 @@ def encode_categorical_features(df):
         "type_mapping": type_mapping,
         "subtype_mapping": subtype_mapping,
         "locality_encoder": le_locality,
-        "garden_orientation_mapping": (
-            garden_orientation_mapping
-            if "gardenOrientation" in df_encoded.columns
-            else None
-        ),
         "epc_mapping": epc_mapping if "epcScore" in df_encoded.columns else None,
     }
 
@@ -377,25 +404,13 @@ def preprocess_missing_values(df):
     print("\n Preprocessing missing values...")
     df_processed = df.copy()
 
-    # Fill missing orientations with 'UNKNOWN'
-    if "gardenOrientation" in df_processed.columns:
-        df_processed["gardenOrientation"] = df_processed["gardenOrientation"].fillna(
-            "UNKNOWN"
-        )
-        print("Filled missing garden orientations with 'UNKNOWN'")
-
-    if "terraceOrientation" in df_processed.columns:
-        df_processed["terraceOrientation"] = df_processed["terraceOrientation"].fillna(
-            "UNKNOWN"
-        )
-        print("Filled missing terrace orientations with 'UNKNOWN'")
-
     # Fill missing EPC scores with 'UNKNOWN' (will be encoded as NaN)
     if "epcScore" in df_processed.columns:
         missing_epc = df_processed["epcScore"].isna().sum()
         print(f"EPC scores missing: {missing_epc}")
 
     # Fill boolean NaN with False (assuming missing means feature not present)
+    # Updated boolean list without removed columns
     boolean_cols = [
         "hasAttic",
         "hasGarden",
@@ -406,7 +421,13 @@ def preprocess_missing_values(df):
         "hasOffice",
         "hasSwimmingPool",
         "hasFireplace",
-        "accessibleDisabledPeople",
+        "hasBasement",
+        "hasDressingRoom",
+        "hasDiningRoom",
+        "hasLift",
+        "hasHeatPump",
+        "hasPhotovoltaicPanels",
+        "hasLivingRoom"
     ]
 
     for col in boolean_cols:
@@ -424,7 +445,7 @@ def create_final_ml_dataset(df_encoded):
     """
     print("\n Creating final ML dataset...")
 
-    # Define potential feature columns
+    # Define potential feature columns (updated without removed columns)
     numeric_features = [
         "bedroomCount",
         "bathroomCount",
@@ -432,6 +453,8 @@ def create_final_ml_dataset(df_encoded):
         "toiletCount",
         "terraceSurface",
         "postCode",
+        "gardenSurface",
+        "totalParkingCount"
     ]
 
     encoded_features = [
@@ -439,11 +462,10 @@ def create_final_ml_dataset(df_encoded):
         "type_encoded",
         "subtype_encoded",
         "locality_encoded",
-        "gardenOrientation_encoded",
-        "terraceOrientation_encoded",
         "epcScore_encoded",
     ]
 
+    # Updated boolean features without removed columns
     boolean_features = [
         "hasAttic_encoded",
         "hasGarden_encoded",
@@ -454,7 +476,13 @@ def create_final_ml_dataset(df_encoded):
         "hasOffice_encoded",
         "hasSwimmingPool_encoded",
         "hasFireplace_encoded",
-        "accessibleDisabledPeople_encoded",
+        "hasBasement_encoded",
+        "hasDressingRoom_encoded",
+        "hasDiningRoom_encoded",
+        "hasLift_encoded",
+        "hasHeatPump_encoded",
+        "hasPhotovoltaicPanels_encoded",
+        "hasLivingRoom_encoded"
     ]
 
     # Combine all potential features
