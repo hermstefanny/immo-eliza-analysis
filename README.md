@@ -219,5 +219,5 @@ The following features were defined to study correlation for the boolean variabl
 - Barplot with boolean features
 
 # Link to presentation
-Slides for the project debrief can be found in:
-https://docs.google.com/presentation/d/1GTieHkNA5of4WgJEvh5rjzXgpyYkmsKY6sEyVpQr4jY/edit?slide=id.g36ad692917a_0_12#slide=id.g36ad692917a_0_12
+Slides for the project debrief can be found in: 
+[Exploratory Data Analysis and Visualization](https://docs.google.com/presentation/d/1GTieHkNA5of4WgJEvh5rjzXgpyYkmsKY6sEyVpQr4jY/edit?slide=id.p#slide=id.p)
