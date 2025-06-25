@@ -21,11 +21,15 @@ This script processes raw Belgian real estate data (from Immoweb) and transforms
 pandas
 numpy
 scikit-learn
+matplotlib 
+seaborn
+scipy 
+requests 
 ```
 
 Install with:
 ```bash
-pip install pandas numpy scikit-learn
+pip install pandas numpy scikit-learn matplotlib seaborn scipy requests 
 ```
 
 ## Input Data Format
