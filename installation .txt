@@ -1,0 +1,17 @@
+To perform the data analys and visualisation, the foloowing installation requiremnets should be executed
+
+installation requirements 
+-----------------------------------------------
+Python 3.12
+pandas z.3.0
+numpy 2.2.6
+sklearn 
+matplotlib 3.10.3
+seaborn 0.13.2
+scipy 1.16.0
+requests 2.32.3
+
+-------------------------------------------
+
+
+
